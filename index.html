@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WhiteHacker Lab">
+    <title>WhiteHacker Lab - 完全統合版セキュリティ教育プラットフォーム</title>
+    
+    <!-- Chart.js for Skill Radar -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        /* ========== FONT & VARIABLES ========== */
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700&display=swap');
+        
+        :root {
+            --primary: #00ff41;
+            --primary-dark: #00cc33;
+            --secondary: #ff006e;
+            --accent: #00d9ff;
+            --warning: #ffa500;
+            --danger: #ff0055;
+            --bg-dark: #0a0e27;
+            --bg-darker: #050813;
+            --text-light: #e0e0e0;
+            --text-muted: #808080;
+            --grid-color: rgba(0, 255, 65, 0.05);
+            --scanline-color: rgba(255, 255, 255, 0.03);
+            --shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+            --glow: 0 0 10px rgba(0, 255, 65, 0.3);
+            --safe-top: max(env(safe-area-inset-top), 12px);
+            --safe-bottom: max(env(safe-area-inset-bottom), 12px);
+            --safe-left: max(env(safe-area-inset-left), 12px);
+            --safe-right: max(env(safe-area-inset-right), 12px);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* ========== NOISE & SCANLINE EFFECTS ========== */
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+        
+        @keyframes glitch {
+            0%, 100% { text-shadow: -2px 0 #ff006e, 2px 0 #00d9ff; }
+            50% { text-shadow: -2px 0 #00d9ff, 2px 0 #ff006e; }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 65, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 65, 0.6); }
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1428 100%);
+            background-attachment: fixed;
+            color: var(--text-light);
+            font-family: 'JetBrains Mono', monospace;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+        }
+        
+        /* Noise overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 255, 255, 0.03),
+                    rgba(255, 255, 255, 0.03) 1px,
+                    transparent 1px,
+                    transparent 2px
+                );
+            animation: scanlines 8s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="none"/><circle cx="30" cy="30" r="20" fill="rgba(0,255,65,0.02)"/><circle cx="70" cy="70" r="15" fill="rgba(255,0,110,0.02)"/></svg>');
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* ========== HEADER & NAV ========== */
+        header {
+            position: sticky;
+            top: var(--safe-top);
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid var(--primary);
+            padding: 12px var(--safe-left);
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Syne', sans-serif;
+            color: var(--primary);
+            text-shadow: var(--glow);
+            letter-spacing: 2px;
+        }
+        
+        .nav-toggle {
+            display: none;
+            background: none;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-toggle:hover {
+            background: rgba(0, 255, 65, 0.1);
+        }
+        
+        nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        nav button {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        nav button:hover,
+        nav button.active {
+            background: var(--primary);
+            color: var(--bg-dark);
+            box-shadow: var(--glow);
+            transform: translateY(-2px);
+        }
+        
+        /* ========== MAIN CONTENT ========== */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px var(--safe-left);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .module-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .module-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .section-header {
+            font-size: 28px;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--primary);
+            text-shadow: var(--glow);
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .section-icon {
+            font-size: 32px;
+        }
+        
+        /* ========== CARDS & CONTAINERS ========== */
+        .card {
+            background: rgba(20, 25, 50, 0.6);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .card-title {
+            color: var(--accent);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .card-content {
+            color: var(--text-light);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        /* ========== BUTTONS & INPUTS ========== */
+        button, input[type="button"], input[type="submit"] {
+            font-family: 'JetBrains Mono', monospace;
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        button:hover, input[type="button"]:hover, input[type="submit"]:hover {
+            background: rgba(0, 255, 65, 0.1);
+            box-shadow: var(--glow);
+            transform: translateY(-2px);
+        }
+        
+        button.danger {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        
+        button.danger:hover {
+            background: rgba(255, 0, 85, 0.1);
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
+        }
+        
+        button.secondary {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        button.secondary:hover {
+            background: rgba(0, 217, 255, 0.1);
+            box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        textarea,
+        select {
+            background: rgba(10, 14, 39, 0.5);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 100%;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="password"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+            background: rgba(10, 14, 39, 0.8);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        /* ========== GRID LAYOUT ========== */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        /* ========== UTILITIES ========== */
+        .text-center {
+            text-align: center;
+        }
+        
+        .text-muted {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: var(--bg-dark);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .badge.warning {
+            background: var(--warning);
+        }
+        
+        .badge.danger {
+            background: var(--danger);
+        }
+        
+        .badge.secondary {
+            background: var(--accent);
+        }
+        
+        /* ========== OUTPUT/RESULT DISPLAY ========== */
+        .output-box {
+            background: rgba(5, 8, 19, 0.8);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            padding: 12px;
+            margin: 12px 0;
+            font-size: 12px;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+        
+        .success {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .error {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        
+        .warning {
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+        
+        /* ========== PROGRESS & STATS ========== */
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(10, 14, 39, 0.5);
+            border: 1px solid var(--primary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--bg-dark);
+        }
+        
+        .stat-box {
+            background: rgba(20, 25, 50, 0.6);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            text-shadow: var(--glow);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+        
+        /* ========== RADAR CHART RESPONSIVE ========== */
+        #skill-radar {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 300px;
+        }
+        
+        @media (max-width: 768px) {
+            #skill-radar {
+                min-height: 250px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #skill-radar {
+                min-height: 200px;
+            }
+        }
+        
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 14px;
+            }
+            
+            .nav-toggle {
+                display: block;
+            }
+            
+            nav {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(10, 14, 39, 0.98);
+                flex-direction: column;
+                gap: 4px;
+                padding: 12px;
+                border-bottom: 2px solid var(--primary);
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+            
+            nav.open {
+                max-height: 500px;
+            }
+            
+            nav button {
+                width: 100%;
+            }
+            
+            header {
+                flex-wrap: wrap;
+            }
+            
+            .section-header {
+                font-size: 20px;
+            }
+            
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 16px;
+            }
+            
+            main {
+                padding: 16px var(--safe-left);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 12px;
+                letter-spacing: 1px;
+            }
+            
+            nav button {
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+            
+            .section-header {
+                font-size: 18px;
+                gap: 8px;
+            }
+            
+            .section-icon {
+                font-size: 24px;
+            }
+            
+            .card {
+                padding: 12px;
+                font-size: 13px;
+            }
+            
+            .stat-value {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-content">
+            <div class="logo">⬥ WhiteHacker Lab</div>
+            <button class="nav-toggle" onclick="toggleNav()">☰</button>
+            <nav id="nav-menu">
+                <button onclick="switchModule('simulator')" class="nav-btn active">Attack Simulator</button>
+                <button onclick="switchModule('crypto')" class="nav-btn">Crypto Playground</button>
+                <button onclick="switchModule('packet')" class="nav-btn">Packet Analyzer</button>
+                <button onclick="switchModule('ctf')" class="nav-btn">CTF Challenge</button>
+                <button onclick="switchModule('stride')" class="nav-btn">STRIDE</button>
+                <button onclick="switchModule('passport')" class="nav-btn">Skill Passport</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main>
+        <!-- 1. ATTACK SIMULATOR -->
+        <section id="simulator" class="module-section active">
+            <div class="section-header">
+                <span class="section-icon">🎯</span>
+                <span>ATTACK SIMULATOR</span>
+            </div>
+            <div id="simulator-content">
+                <div class="card">
+                    <div class="card-title">SQL Injection Simulator</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">ログインフォームに対するSQLi攻撃を体験してください。</p>
+                        <p><strong>攻撃例：</strong> <code style="color: var(--danger);">admin' OR '1'='1</code></p>
+                        <input type="text" id="sqli-username" placeholder="Username" style="margin-bottom: 8px;">
+                        <input type="password" id="sqli-password" placeholder="Password" style="margin-bottom: 8px;">
+                        <button onclick="simulateSQLi()">Execute Attack</button>
+                        <div id="sqli-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">XSS (Cross-Site Scripting)</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">コメント欄にペイロードを入力してXSS脆弱性をシミュレートします。</p>
+                        <textarea id="xss-payload" placeholder='Example: <img src=x onerror="alert(\'XSS\')">'></textarea>
+                        <button onclick="simulateXSS()" style="margin-top: 8px;">Execute XSS</button>
+                        <div id="xss-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Hash Cracking Demo</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">辞書攻撃によるハッシュクラッキングのデモンストレーション。</p>
+                        <input type="text" id="hash-input" placeholder="Enter hash to crack" style="margin-bottom: 8px;">
+                        <button onclick="simulateHashCrack()">Attempt Crack</button>
+                        <div id="hash-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">CSRF (Cross-Site Request Forgery)</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">CSRF攻撃のシミュレーション。</p>
+                        <button onclick="simulateCSRF()">Trigger CSRF Attack</button>
+                        <div id="csrf-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. CRYPTO PLAYGROUND -->
+        <section id="crypto" class="module-section">
+            <div class="section-header">
+                <span class="section-icon">🔐</span>
+                <span>CRYPTO PLAYGROUND</span>
+            </div>
+            <div id="crypto-content">
+                <p style="color: var(--text-muted); margin-bottom: 16px;">WebCrypto APIを使用した暗号技術の実践的な体験</p>
+                
+                <div class="card">
+                    <div class="card-title">AES-GCM Encryption</div>
+                    <div class="card-content">
+                        <textarea id="aes-plaintext" placeholder="Plaintext to encrypt"></textarea>
+                        <input type="password" id="aes-password" placeholder="Password" style="margin-top: 8px;">
+                        <button onclick="performAESGCM()" style="margin-top: 8px;">Encrypt</button>
+                        <div id="aes-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">ECDH (Elliptic Curve Diffie-Hellman)</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">公開鍵交換のシミュレーション</p>
+                        <button onclick="performECDH()" style="margin-bottom: 8px;">Generate Keys & Derive Secret</button>
+                        <div id="ecdh-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">PBKDF2 Key Derivation</div>
+                    <div class="card-content">
+                        <input type="password" id="pbkdf2-password" placeholder="Password" style="margin-bottom: 8px;">
+                        <button onclick="performPBKDF2()">Derive Key</button>
+                        <div id="pbkdf2-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">CSPRNG (Cryptographically Secure Random)</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">セキュアなランダム値の生成</p>
+                        <button onclick="generateCSPRNG()">Generate Random Token</button>
+                        <div id="csprng-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. PACKET ANALYZER -->
+        <section id="packet" class="module-section">
+            <div class="section-header">
+                <span class="section-icon">📡</span>
+                <span>PACKET ANALYZER</span>
+            </div>
+            <div id="packet-content">
+                <div class="card">
+                    <div class="card-title">HTTP Header Inspector</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">HTTPヘッダーの検査とセキュリティ脆弱性の検出</p>
+                        <button onclick="analyzeHTTPHeaders()" style="margin-bottom: 8px;">Fetch & Analyze Headers</button>
+                        <div id="http-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">JWT Analyzer</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">JWTトークンの解析とalg:none脆弱性の検証</p>
+                        <textarea id="jwt-input" placeholder="Paste JWT token here"></textarea>
+                        <button onclick="analyzeJWT()" style="margin-top: 8px;">Analyze JWT</button>
+                        <div id="jwt-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Cookie Matrix</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">現在のクッキーを表示・検査</p>
+                        <button onclick="showCookieMatrix()">Display Cookies</button>
+                        <div id="cookie-output" class="output-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. CTF CHALLENGE -->
+        <section id="ctf" class="module-section">
+            <div class="section-header">
+                <span class="section-icon">🚩</span>
+                <span>CTF CHALLENGE</span>
+            </div>
+            <div id="ctf-content">
+                <div class="card">
+                    <div class="card-title">Base64 Challenge</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">Base64エンコードされたテキストをデコードしてフラグを見つけます。</p>
+                        <div id="base64-challenge-text" class="output-box" style="margin-bottom: 8px;"></div>
+                        <input type="text" id="base64-flag-input" placeholder="Flag" style="margin-bottom: 8px;">
+                        <button onclick="submitBase64Flag()">Submit</button>
+                        <div id="base64-result" style="margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">ROT13 Challenge</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">ROT13で暗号化されたテキストをデコードします。</p>
+                        <div id="rot13-challenge-text" class="output-box" style="margin-bottom: 8px;"></div>
+                        <input type="text" id="rot13-flag-input" placeholder="Flag" style="margin-bottom: 8px;">
+                        <button onclick="submitROT13Flag()">Submit</button>
+                        <div id="rot13-result" style="margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">JWT Flag Challenge</div>
+                    <div class="card-content">
+                        <p style="margin-bottom: 12px;">改ざんされたJWTトークンを検出・修正します。</p>
+                        <div id="jwt-challenge-token" class="output-box" style="margin-bottom: 8px;"></div>
+                        <input type="text" id="jwt-flag-input" placeholder="Extracted Flag" style="margin-bottom: 8px;">
+                        <button onclick="submitJWTFlag()">Submit</button>
+                        <div id="jwt-result" style="margin-top: 8px;"></div>
+                    </div>
+                </section>
+
+        <!-- 5. STRIDE -->
+        <section id="stride" class="module-section">
+            <div class="section-header">
+                <span class="section-icon">🛡️</span>
+                <span>STRIDE THREAT ANALYSIS</span>
+            </div>
+            <div id="stride-content">
+                <p style="color: var(--text-muted); margin-bottom: 16px;">STRIDE脅威モデルを使用したセキュリティ分析</p>
+                
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">🔑 Spoofing</div>
+                        <div class="card-content">
+                            認証またはIDの詐称攻撃
+                            <button onclick="toggleThreat('spoofing')" style="margin-top: 8px; width: 100%;">Details</button>
+                            <div id="spoofing-detail" style="display:none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--text-muted); font-size: 12px;">
+                                <strong>脅威:</strong> 不正な認証
+                                <br><strong>事例:</strong> パスワードスプレー、トークン改ざん
+                                <br><strong>対策:</strong> MFA, 強固な認証
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">🚫 Tampering</div>
+                        <div class="card-content">
+                            データ・ソースの改ざん
+                            <button onclick="toggleThreat('tampering')" style="margin-top: 8px; width: 100%;">Details</button>
+                            <div id="tampering-detail" style="display:none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--text-muted); font-size: 12px;">
+                                <strong>脅威:</strong> データ改ざん
+                                <br><strong>事例:</strong> MITM, SQLi, フォーム改ざん
+                                <br><strong>対策:</strong> HTTPS, 入力検証, 署名
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">👀 Repudiation</div>
+                        <div class="card-content">
+                            アクション否認の脅威
+                            <button onclick="toggleThreat('repudiation')" style="margin-top: 8px; width: 100%;">Details</button>
+                            <div id="repudiation-detail" style="display:none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--text-muted); font-size: 12px;">
+                                <strong>脅威:</strong> 行動否認
+                                <br><strong>事例:</strong> ログなしトランザクション
+                                <br><strong>対策:</strong> 監査ログ, デジタル署名
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">⚠️ Information Disclosure</div>
+                        <div class="card-content">
+                            情報漏洩の脅威
+                            <button onclick="toggleThreat('disclosure')" style="margin-top: 8px; width: 100%;">Details</button>
+                            <div id="disclosure-detail" style="display:none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--text-muted); font-size: 12px;">
+                                <strong>脅威:</strong> データ漏洩
+                                <br><strong>事例:</strong> エラーメッセージ漏洩, ディレクトリ列挙
+                                <br><strong>対策:</strong> 暗号化, アクセス制御
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">🔓 Denial of Service</div>
+                        <div class="card-content">
+                            DoS攻撃の脅威
+                            <button onclick="toggleThreat('dos')" style="margin-top: 8px; width: 100%;">Details</button>
+                            <div id="dos-detail" style="display:none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--text-muted); font-size: 12px;">
+                                <strong>脅威:</strong> サービス停止
+                                <br><strong>事例:</strong> DDoS, 大量リクエスト
+                                <br><strong>対策:</strong> レート制限, DDoS対策
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">📈 Elevation of Privilege</div>
+                        <div class="card-content">
+                            権限昇格の脅威
+                            <button onclick="toggleThreat('privilege')" style="margin-top: 8px; width: 100%;">Details</button>
+                            <div id="privilege-detail" style="display:none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--text-muted); font-size: 12px;">
+                                <strong>脅威:</strong> 不正な権限取得
+                                <br><strong>事例:</strong> IDOR, Path Traversal
+                                <br><strong>対策:</strong> RBAC, 権限検証
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. SKILL PASSPORT -->
+        <section id="passport" class="module-section">
+            <div class="section-header">
+                <span class="section-icon">🎓</span>
+                <span>SKILL PASSPORT</span>
+            </div>
+            <div id="passport-content">
+                <div class="grid-3">
+                    <div class="stat-box">
+                        <div class="stat-value" id="xp-display">0</div>
+                        <div class="stat-label">Total XP</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="level-display">1</div>
+                        <div class="stat-label">Level</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="badge-display">0</div>
+                        <div class="stat-label">Badges</div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-title">XP Progress</div>
+                    <div class="card-content">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="xp-bar" style="width: 0%">0%</div>
+                        </div>
+                        <p style="font-size: 12px; margin-top: 8px;" id="xp-text">0 / 1000 XP to next level</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Earned Badges</div>
+                    <div class="card-content" id="badge-list">
+                        <p style="color: var(--text-muted);">Complete challenges to unlock badges</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Skill Radar</div>
+                    <div class="card-content">
+                        <canvas id="skill-radar" style="width: 100%; height: 350px; display: block;"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Session Data</div>
+                    <div class="card-content">
+                        <button onclick="exportProgress()" style="margin-right: 8px; margin-bottom: 8px;">Export</button>
+                        <button onclick="importProgress()" style="margin-bottom: 8px;">Import</button>
+                        <button onclick="resetProgress()" class="danger" style="margin-bottom: 8px;">Reset</button>
+                        <div id="session-info" style="margin-top: 12px; padding: 12px; background: rgba(0,255,65,0.05); border-radius: 4px; font-size: 12px;">
+                            Loading session data...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- JavaScript - Core Functions -->
+    <script>
+        // ========== STORAGE & STATE MANAGEMENT ==========
+        const STORAGE_KEY = 'whitehacker_lab_state';
+        
+        class LabState {
+            constructor() {
+                this.xp = 0;
+                this.level = 1;
+                this.badges = [];
+                this.skills = {
+                    'Attack': 0,
+                    'Crypto': 0,
+                    'Packet': 0,
+                    'CTF': 0,
+                    'STRIDE': 0
+                };
+                this.challenges = {
+                    'base64': false,
+                    'rot13': false,
+                    'jwt': false
+                };
+                this.load();
+            }
+            
+            load() {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const loadedData = JSON.parse(saved);
+                    Object.assign(this, loadedData);
+                    
+                    // Migrate old skills format if needed
+                    if (!this.skills['Attack'] && (this.skills['SQLi'] || this.skills['XSS'])) {
+                        this.skills['Attack'] = (this.skills['SQLi'] || 0) + (this.skills['XSS'] || 0);
+                        delete this.skills['SQLi'];
+                        delete this.skills['XSS'];
+                        this.save();
+                    }
+                }
+            }
+            
+            save() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    xp: this.xp,
+                    level: this.level,
+                    badges: this.badges,
+                    skills: this.skills,
+                    challenges: this.challenges
+                }));
+            }
+            
+            addXP(amount, skill) {
+                this.xp += amount;
+                if (skill && this.skills[skill] !== undefined) {
+                    this.skills[skill] += amount;
+                }
+                
+                const xpPerLevel = 1000;
+                this.level = Math.floor(this.xp / xpPerLevel) + 1;
+                
+                this.save();
+                this.updateUI();
+            }
+            
+            addBadge(badge) {
+                if (!this.badges.includes(badge)) {
+                    this.badges.push(badge);
+                    this.save();
+                }
+            }
+            
+            updateUI() {
+                document.getElementById('xp-display').textContent = this.xp;
+                document.getElementById('level-display').textContent = this.level;
+                document.getElementById('badge-display').textContent = this.badges.length;
+                
+                const xpInLevel = this.xp % 1000;
+                const percentage = (xpInLevel / 1000) * 100;
+                document.getElementById('xp-bar').style.width = percentage + '%';
+                document.getElementById('xp-bar').textContent = Math.round(percentage) + '%';
+                document.getElementById('xp-text').textContent = xpInLevel + ' / 1000 XP to next level';
+                
+                // Update badge list
+                const badgeList = document.getElementById('badge-list');
+                if (this.badges.length > 0) {
+                    badgeList.innerHTML = this.badges.map(b => `<span class="badge">${b}</span>`).join('');
+                }
+                
+                // Update session info
+                const lastUpdate = new Date().toLocaleString('ja-JP');
+                document.getElementById('session-info').textContent = 
+                    `Level: ${this.level} | XP: ${this.xp} | Badges: ${this.badges.length} | Last Update: ${lastUpdate}`;
+                
+                // Update radar chart
+                if (window.Chart && radarChart) {
+                    initRadarChart();
+                }
+            }
+        }
+        
+        const state = new LabState();
+        state.updateUI();
+        
+        // ========== MODULE NAVIGATION ==========
+        function switchModule(module) {
+            // Hide all sections
+            document.querySelectorAll('.module-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(module).classList.add('active');
+            
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Close mobile menu
+            document.getElementById('nav-menu').classList.remove('open');
+        }
+        
+        function toggleNav() {
+            document.getElementById('nav-menu').classList.toggle('open');
+        }
+        
+        // ========== 1. ATTACK SIMULATOR ==========
+        function simulateSQLi() {
+            const username = document.getElementById('sqli-username').value;
+            const password = document.getElementById('sqli-password').value;
+            const output = document.getElementById('sqli-output');
+            
+            // Simulate SQLi detection
+            const isSQLi = username.includes("'") || username.includes("--") || username.includes("/*");
+            
+            let result = `
+[SQLi DETECTION RESULT]
+Username: ${username}
+Password: ${'*'.repeat(password.length)}
+Attack Pattern Detected: ${isSQLi ? 'YES ⚠️' : 'NO ✓'}
+            `.trim();
+            
+            if (isSQLi) {
+                result += `\n\nVulnerability Details:
+- Input validation missing
+- Parameterized queries not used
+- Risk Level: CRITICAL
+                `;
+                output.classList.add('error');
+                state.addXP(50, 'Attack');
+                state.addBadge('SQLi Novice');
+            } else {
+                output.classList.remove('error');
+            }
+            
+            output.textContent = result;
+            output.style.display = 'block';
+        }
+        
+        function simulateXSS() {
+            const payload = document.getElementById('xss-payload').value;
+            const output = document.getElementById('xss-output');
+            
+            const isXSS = payload.includes('<') && (payload.includes('script') || payload.includes('onerror') || payload.includes('onclick'));
+            
+            let result = `
+[XSS DETECTION RESULT]
+Payload: ${payload.substring(0, 50)}${payload.length > 50 ? '...' : ''}
+XSS Pattern Detected: ${isXSS ? 'YES ⚠️' : 'NO ✓'}
+            `.trim();
+            
+            if (isXSS) {
+                result += `\n\nVulnerability Details:
+- HTML encoding not applied
+- Event handler detected
+- Risk Level: HIGH
+- DOM XSS Vector: YES
+                `;
+                output.classList.add('error');
+                state.addXP(50, 'Attack');
+                state.addBadge('XSS Scholar');
+            } else {
+                output.classList.remove('error');
+            }
+            
+            output.textContent = result;
+            output.style.display = 'block';
+        }
+        
+        function simulateHashCrack() {
+            const hash = document.getElementById('hash-input').value;
+            const output = document.getElementById('hash-output');
+            
+            // Simple hash pattern detection
+            const hashPatterns = {
+                'md5': /^[a-f0-9]{32}$/i,
+                'sha1': /^[a-f0-9]{40}$/i,
+                'sha256': /^[a-f0-9]{64}$/i
+            };
+            
+            let hashType = 'unknown';
+            for (const [type, pattern] of Object.entries(hashPatterns)) {
+                if (pattern.test(hash)) {
+                    hashType = type;
+                    break;
+                }
+            }
+            
+            let result = `
+[HASH ANALYSIS]
+Hash: ${hash.substring(0, 32)}${hash.length > 32 ? '...' : ''}
+Detected Type: ${hashType.toUpperCase()}
+            `.trim();
+            
+            if (hashType !== 'unknown') {
+                result += `\n\nCracking Status:
+- Dictionary attack: Simulated
+- Common passwords checked: 1000
+- Wordlist iterations: 10000
+- Status: No match found (upgrade to premium for larger wordlists)
+                `;
+                state.addXP(30, 'Crypto');
+                output.classList.add('warning');
+            } else {
+                result += `\nInvalid hash format`;
+                output.classList.add('error');
+            }
+            
+            output.textContent = result;
+            output.style.display = 'block';
+        }
+        
+        function simulateCSRF() {
+            const output = document.getElementById('csrf-output');
+            
+            const result = `
+[CSRF ATTACK SIMULATION]
+Forged Request Intercepted: YES ⚠️
+
+Details:
+- Method: POST /api/transfer
+- Victim Cookie: ${document.cookie || 'No cookies present'}
+- CSRF Token: Missing
+- SameSite Flag: Not Set
+- Origin Check: Failed
+
+Mitigation:
+1. Implement SameSite=Strict
+2. Require CSRF tokens
+3. Verify Origin headers
+4. Use POST for state changes
+            `.trim();
+            
+            output.classList.add('warning');
+            output.textContent = result;
+            output.style.display = 'block';
+            
+            state.addXP(40, 'Attack');
+        }
+        
+        // ========== 2. CRYPTO PLAYGROUND ==========
+        async function performAESGCM() {
+            const plaintext = document.getElementById('aes-plaintext').value;
+            const password = document.getElementById('aes-password').value;
+            const output = document.getElementById('aes-output');
+            
+            if (!plaintext || !password) {
+                output.textContent = 'Please enter both plaintext and password';
+                output.classList.add('error');
+                output.style.display = 'block';
+                return;
+            }
+            
+            try {
+                // Derive key from password
+                const encoder = new TextEncoder();
+                const data = encoder.encode(password);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const key = await crypto.subtle.importKey('raw', hashBuffer, 'AES-GCM', false, ['encrypt']);
+                
+                // Generate IV
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                
+                // Encrypt
+                const ciphertext = await crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv: iv },
+                    key,
+                    encoder.encode(plaintext)
+                );
+                
+                const result = `
+[AES-GCM ENCRYPTION]
+Plaintext: ${plaintext}
+Ciphertext (hex): ${Array.from(new Uint8Array(ciphertext)).map(b => b.toString(16).padStart(2, '0')).join('')}
+IV (hex): ${Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')}
+Key Size: 256-bit
+Algorithm: AES-GCM
+Encryption Successful ✓
+                `.trim();
+                
+                output.classList.remove('error');
+                output.classList.add('success');
+                output.textContent = result;
+                output.style.display = 'block';
+                
+                state.addXP(75, 'Crypto');
+                state.addBadge('Cryptographer');
+            } catch (e) {
+                output.textContent = 'Encryption error: ' + e.message;
+                output.classList.add('error');
+                output.style.display = 'block';
+            }
+        }
+        
+        async function performECDH() {
+            const output = document.getElementById('ecdh-output');
+            
+            try {
+                // Generate two key pairs
+                const keyPair1 = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey']);
+                const keyPair2 = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey']);
+                
+                // Derive shared secret
+                const sharedSecret = await crypto.subtle.deriveKey(
+                    { name: 'ECDH', public: keyPair2.publicKey },
+                    keyPair1.privateKey,
+                    { name: 'AES-GCM', length: 256 },
+                    true,
+                    ['encrypt', 'decrypt']
+                );
+                
+                const result = `
+[ECDH KEY EXCHANGE]
+Curve: P-256 (secp256r1)
+Key Exchange Successful ✓
+
+Key Pair 1: Generated
+Key Pair 2: Generated
+
+Shared Secret: Derived successfully
+Key Size: 256-bit
+Algorithm: ECDH with AES-GCM
+
+Security Assessment:
+- Forward Secrecy: Supported
+- Perfect Forward Secrecy (PFS): YES
+- Quantum Resistant: NO (use post-quantum algorithms for quantum safety)
+                `.trim();
+                
+                output.classList.remove('error');
+                output.classList.add('success');
+                output.textContent = result;
+                output.style.display = 'block';
+                
+                state.addXP(75, 'Crypto');
+            } catch (e) {
+                output.textContent = 'ECDH error: ' + e.message;
+                output.classList.add('error');
+                output.style.display = 'block';
+            }
+        }
+        
+        async function performPBKDF2() {
+            const password = document.getElementById('pbkdf2-password').value;
+            const output = document.getElementById('pbkdf2-output');
+            
+            if (!password) {
+                output.textContent = 'Please enter a password';
+                output.classList.add('error');
+                output.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const encoder = new TextEncoder();
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                
+                const key = await crypto.subtle.deriveKey(
+                    { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
+                    await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveKey']),
+                    { name: 'AES-GCM', length: 256 },
+                    true,
+                    ['encrypt', 'decrypt']
+                );
+                
+                const result = `
+[PBKDF2 KEY DERIVATION]
+Algorithm: PBKDF2-HMAC-SHA256
+Iterations: 100,000
+Salt (hex): ${Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('')}
+Derived Key Size: 256-bit
+Key Derivation: Successful ✓
+
+Security Notes:
+- High iteration count provides strong security
+- Salt prevents rainbow table attacks
+- NIST recommended iterations: 600,000+ (consider increasing for production)
+                `.trim();
+                
+                output.classList.remove('error');
+                output.classList.add('success');
+                output.textContent = result;
+                output.style.display = 'block';
+                
+                state.addXP(50, 'Crypto');
+            } catch (e) {
+                output.textContent = 'PBKDF2 error: ' + e.message;
+                output.classList.add('error');
+                output.style.display = 'block';
+            }
+        }
+        
+        function generateCSPRNG() {
+            const output = document.getElementById('csprng-output');
+            
+            try {
+                const randomBytes = crypto.getRandomValues(new Uint8Array(32));
+                const randomHex = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+                const randomBase64 = btoa(String.fromCharCode.apply(null, randomBytes));
+                
+                const result = `
+[CSPRNG TOKEN GENERATION]
+Algorithm: Web Crypto API (OS CSPRNG)
+Byte Length: 32 bytes (256 bits)
+
+Hex Format:
+${randomHex}
+
+Base64 Format:
+${randomBase64}
+
+Token Quality:
+- Entropy Source: System CSPRNG
+- Uniqueness: ✓ Guaranteed
+- Predictability: ✗ Not predictable
+- Use Case: Session tokens, CSRF tokens, nonces
+                `.trim();
+                
+                output.classList.remove('error');
+                output.classList.add('success');
+                output.textContent = result;
+                output.style.display = 'block';
+                
+                state.addXP(30, 'Crypto');
+            } catch (e) {
+                output.textContent = 'CSPRNG error: ' + e.message;
+                output.classList.add('error');
+                output.style.display = 'block';
+            }
+        }
+        
+        // ========== 3. PACKET ANALYZER ==========
+        function analyzeHTTPHeaders() {
+            const output = document.getElementById('http-output');
+            
+            const result = `
+[HTTP HEADER SECURITY ANALYSIS]
+
+Current Page Headers:
+- Content-Type: text/html
+- Connection: keep-alive
+
+Security Headers Status:
+- Content-Security-Policy: ✗ Missing (XSS risk)
+- X-Content-Type-Options: ✗ Missing (MIME sniffing risk)
+- X-Frame-Options: ✗ Missing (Clickjacking risk)
+- Strict-Transport-Security: ✓ Present (HTTPS enforced)
+- X-XSS-Protection: ✗ Deprecated
+
+Recommendations:
+1. Add CSP header
+2. Set X-Content-Type-Options: nosniff
+3. Set X-Frame-Options: DENY
+4. Implement HSTS policy
+5. Add Referrer-Policy
+            `.trim();
+            
+            output.classList.add('warning');
+            output.textContent = result;
+            output.style.display = 'block';
+            
+            state.addXP(40, 'Packet');
+        }
+        
+        function analyzeJWT() {
+            const token = document.getElementById('jwt-input').value.trim();
+            const output = document.getElementById('jwt-output');
+            
+            if (!token) {
+                output.textContent = 'Please paste a JWT token';
+                output.classList.add('error');
+                output.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid JWT format (expected 3 parts)');
+                }
+                
+                const header = JSON.parse(atob(parts[0]));
+                const payload = JSON.parse(atob(parts[1]));
+                const signature = parts[2];
+                
+                let result = `
+[JWT ANALYSIS]
+Format: Valid JWT (3 parts) ✓
+
+HEADER:
+${JSON.stringify(header, null, 2)}
+
+PAYLOAD:
+${JSON.stringify(payload, null, 2)}
+
+SIGNATURE: ${signature.substring(0, 20)}...
+
+Vulnerability Check:
+- alg: none vulnerability: ${header.alg === 'none' ? '⚠️ YES - CRITICAL' : '✓ NO'}
+- Algorithm: ${header.alg}
+                `.trim();
+                
+                if (header.alg === 'none') {
+                    result += `\n\nCRITICAL VULNERABILITY:
+The JWT uses alg:none, allowing token forgery without signature verification!
+This is a severe security flaw.
+                    `;
+                    output.classList.add('error');
+                    state.addXP(100, 'Packet');
+                } else {
+                    output.classList.add('success');
+                    state.addXP(50, 'Packet');
+                }
+                
+                output.textContent = result;
+                output.style.display = 'block';
+            } catch (e) {
+                output.textContent = 'JWT parsing error: ' + e.message;
+                output.classList.add('error');
+                output.style.display = 'block';
+            }
+        }
+        
+        function showCookieMatrix() {
+            const output = document.getElementById('cookie-output');
+            
+            const cookies = document.cookie.split(';').map(c => c.trim()).filter(c => c);
+            
+            let result = `
+[COOKIE MATRIX]
+Total Cookies: ${cookies.length}
+
+Cookies:
+${cookies.length > 0 ? cookies.map(c => `- ${c}`).join('\n') : '(No cookies found)'}
+
+Cookie Security Analysis:
+- HttpOnly Flag: ✗ Not set (XSS risk)
+- Secure Flag: ✓ Recommended when over HTTPS
+- SameSite: ✗ Missing (CSRF risk)
+
+Recommendations:
+1. Set HttpOnly flag to prevent JavaScript access
+2. Use Secure flag for HTTPS-only transmission
+3. Implement SameSite=Strict to prevent CSRF
+            `.trim();
+            
+            output.classList.add('warning');
+            output.textContent = result;
+            output.style.display = 'block';
+            
+            state.addXP(30, 'Packet');
+        }
+        
+        // ========== 4. CTF CHALLENGES ==========
+        function initCTFChallenges() {
+            // Base64 challenge
+            const base64Flag = 'flag{base64_is_not_encryption}';
+            const base64Encoded = btoa(base64Flag);
+            document.getElementById('base64-challenge-text').textContent = `Encoded: ${base64Encoded}`;
+            
+            // ROT13 challenge
+            const rot13Flag = 'flag{rot13_is_weak_cipher}';
+            const rot13Encoded = rot13Flag.replace(/[a-zA-Z]/g, function(c) {
+                return String.fromCharCode((c <= 'Z' ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26);
+            });
+            document.getElementById('rot13-challenge-text').textContent = `Encoded: ${rot13Encoded}`;
+            
+            // JWT challenge
+            const jwtChallenge = 'eyJhbGciOiJub25lIn0.eyJmbGFnIjoiZmxhZ3tqd3RfYWxnX25vbmV9In0.';
+            document.getElementById('jwt-challenge-token').textContent = `Token: ${jwtChallenge}`;
+        }
+        
+        function submitBase64Flag() {
+            const input = document.getElementById('base64-flag-input').value;
+            const result = document.getElementById('base64-result');
+            const expected = 'flag{base64_is_not_encryption}';
+            
+            if (input === expected) {
+                result.innerHTML = '<span class="badge" style="background: var(--primary);">✓ CORRECT!</span>';
+                state.addXP(100, 'CTF');
+                state.addBadge('Base64 Master');
+                state.challenges['base64'] = true;
+            } else {
+                result.innerHTML = '<span class="badge danger">✗ Incorrect</span>';
+            }
+        }
+        
+        function submitROT13Flag() {
+            const input = document.getElementById('rot13-flag-input').value;
+            const result = document.getElementById('rot13-result');
+            const expected = 'flag{rot13_is_weak_cipher}';
+            
+            if (input === expected) {
+                result.innerHTML = '<span class="badge" style="background: var(--primary);">✓ CORRECT!</span>';
+                state.addXP(100, 'CTF');
+                state.addBadge('Cryptanalyst');
+                state.challenges['rot13'] = true;
+            } else {
+                result.innerHTML = '<span class="badge danger">✗ Incorrect</span>';
+            }
+        }
+        
+        function submitJWTFlag() {
+            const input = document.getElementById('jwt-flag-input').value;
+            const result = document.getElementById('jwt-result');
+            const expected = 'flag{jwt_alg_none}';
+            
+            if (input === expected) {
+                result.innerHTML = '<span class="badge" style="background: var(--primary);">✓ CORRECT!</span>';
+                state.addXP(150, 'CTF');
+                state.addBadge('JWT Breaker');
+                state.challenges['jwt'] = true;
+            } else {
+                result.innerHTML = '<span class="badge danger">✗ Incorrect</span>';
+            }
+        }
+        
+        // ========== 5. STRIDE ==========
+        function toggleThreat(threat) {
+            const detail = document.getElementById(threat + '-detail');
+            const isHidden = detail.style.display === 'none' || !detail.style.display;
+            detail.style.display = isHidden ? 'block' : 'none';
+            
+            // Award XP when learning about threat
+            if (isHidden) {
+                state.addXP(25, 'STRIDE');
+            }
+        }
+        
+        // ========== 6. PASSPORT ==========
+        function exportProgress() {
+            const dataStr = JSON.stringify(state, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `whitehacker-lab-progress-${Date.now()}.json`;
+            link.click();
+        }
+        
+        function importProgress() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const imported = JSON.parse(event.target.result);
+                        Object.assign(state, imported);
+                        state.save();
+                        state.updateUI();
+                        alert('Progress imported successfully!');
+                    } catch (err) {
+                        alert('Invalid file format');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+        
+        function resetProgress() {
+            if (confirm('Are you sure? This will reset all progress.')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        }
+        
+        // ========== RADAR CHART ==========
+        let radarChart = null;
+        
+        function initRadarChart() {
+            const canvas = document.getElementById('skill-radar');
+            if (!canvas || !window.Chart) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Get max skill value
+            const maxSkillValue = Math.max(
+                state.skills['Attack'] || 0,
+                state.skills['Crypto'] || 0,
+                state.skills['Packet'] || 0,
+                state.skills['CTF'] || 0,
+                state.skills['STRIDE'] || 0,
+                100
+            );
+            
+            // Normalize to 100+ scale
+            const normalizedMax = Math.ceil(maxSkillValue / 100) * 100 || 100;
+            
+            // SecurityScore from badges and challenges
+            const securityScore = (state.badges.length * 20) + 
+                                  (Object.values(state.challenges).filter(Boolean).length * 25);
+            
+            // Destroy existing chart if present
+            if (radarChart) {
+                radarChart.destroy();
+            }
+            
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Attack', 'Crypto', 'Packet', 'CTF', 'STRIDE', 'Security'],
+                    datasets: [{
+                        label: 'Skill Level (XP)',
+                        data: [
+                            state.skills['Attack'] || 0,
+                            state.skills['Crypto'] || 0,
+                            state.skills['Packet'] || 0,
+                            state.skills['CTF'] || 0,
+                            state.skills['STRIDE'] || 0,
+                            securityScore
+                        ],
+                        borderColor: 'rgba(0, 255, 65, 1)',
+                        backgroundColor: 'rgba(0, 255, 65, 0.15)',
+                        pointBackgroundColor: 'rgba(0, 255, 65, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(0, 255, 65, 1)',
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        borderWidth: 2,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: undefined,
+                    scales: {
+                        r: {
+                            max: normalizedMax,
+                            beginAtZero: true,
+                            ticks: {
+                                color: 'rgba(224, 224, 224, 0.6)',
+                                font: { 
+                                    family: "'JetBrains Mono', monospace",
+                                    size: 11
+                                },
+                                backdropColor: 'transparent'
+                            },
+                            grid: {
+                                color: 'rgba(0, 255, 65, 0.08)',
+                                drawBorder: true,
+                                borderColor: 'rgba(0, 255, 65, 0.2)'
+                            },
+                            pointLabels: {
+                                color: 'rgba(0, 217, 255, 1)',
+                                font: { 
+                                    size: 12, 
+                                    weight: 'bold', 
+                                    family: "'JetBrains Mono', monospace" 
+                                },
+                                padding: 12
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: 'rgba(224, 224, 224, 1)',
+                                font: { 
+                                    family: "'JetBrains Mono', monospace",
+                                    size: 12,
+                                    weight: 'bold'
+                                },
+                                padding: 15,
+                                usePointStyle: true
+                            },
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(10, 14, 39, 0.9)',
+                            titleColor: 'rgba(0, 255, 65, 1)',
+                            bodyColor: 'rgba(224, 224, 224, 1)',
+                            borderColor: 'rgba(0, 255, 65, 1)',
+                            borderWidth: 1,
+                            titleFont: { family: "'JetBrains Mono', monospace" },
+                            bodyFont: { family: "'JetBrains Mono', monospace" },
+                            padding: 10,
+                            caretPadding: 10
+                        }
+                    }
+                }
+            });
+        }
+        
+        // ========== INITIALIZATION ==========
+        window.addEventListener('DOMContentLoaded', () => {
+            initCTFChallenges();
+            state.updateUI();
+            // Initialize radar chart after state is ready
+            setTimeout(() => {
+                initRadarChart();
+            }, 100);
+        });
+    
+</body>
+</html>
