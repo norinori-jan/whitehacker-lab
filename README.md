@@ -17,3 +17,9 @@ whitehacker-lab はサーバー不要で動作します。
 3. index.html を右クリック → “Open with Live Server”
 4. 自動リロードが有効になり開発が快適になります
 
+## 📸 スクリーンショット
+
+（例）  
+![UI Screenshot](./screenshot.png)
+
+※ screenshot.png をリポジトリに追加すれば表示されます。
