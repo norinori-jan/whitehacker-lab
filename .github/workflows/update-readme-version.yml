@@ -1,0 +1,41 @@
+name: Update README Version
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          echo "version=$tag" >> $GITHUB_OUTPUT
+
+      - name: Update README version
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          echo "Updating README to version $version"
+
+          # README の Version 行を置換
+          if grep -q "^Version:" README.md; then
+            sed -i "s/^Version:.*/Version: $version/" README.md
+          else
+            echo "Version: $version" >> README.md
+          fi
+
+      - name: Commit updated README
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add README.md
+          git commit -m "Update README version to ${{ steps.version.outputs.version }}" || echo "No changes"
+          git push
