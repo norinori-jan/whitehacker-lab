@@ -910,6 +910,45 @@
             </div>
         </section>
     </main>
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const role = localStorage.getItem('sessionRole') || 'owner';
+  const sections = document.querySelectorAll('.module-section');
+
+  // --- Family モード（学習モード） ---
+  if (role === 'family') {
+    sections.forEach(sec => {
+      const id = sec.id;
+      // 攻撃系・暗号系を非表示
+      if (id === 'simulator' || id === 'crypto' || id === 'exploit') {
+        sec.style.display = 'none';
+      }
+    });
+
+    // 学習系ページへ強制遷移
+    const learnSection = document.getElementById('learn') 
+                      || document.getElementById('threat') 
+                      || document.getElementById('packet');
+    if (learnSection) {
+      // active クラスを付け替え
+      sections.forEach(sec => sec.classList.remove('active'));
+      learnSection.classList.add('active');
+      window.location.hash = '#' + learnSection.id;
+    }
+
+    // 学習モードバッジを追加（任意）
+    const header = document.querySelector('.section-header');
+    if (header) {
+      const badge = document.createElement('span');
+      badge.textContent = '👨‍🏫 学習モード';
+      badge.style.marginLeft = '12px';
+      badge.style.color = 'var(--green)';
+      badge.style.fontWeight = 'bold';
+      header.appendChild(badge);
+    }
+  }
+});
+</script>
 
     <!-- JavaScript - Core Functions -->
     <script>
